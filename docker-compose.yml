@@ -1,0 +1,5 @@
+version: "3.7"
+services:
+    haproxy:
+        image: "lnlscon/haproxy:2.1.3-lua5.3"
+        build: .
