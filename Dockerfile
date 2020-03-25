@@ -5,7 +5,7 @@ ENV HAPROXY_MAJOR 2.1
 ENV HAPROXY_VERSION 2.1.3
 
 RUN set -xe \
-    && apk add --no-cache --purge -uU lua lua-dev git \
+    && apk add --no-cache --purge -uU lua5.3 lua5.3-dev git \
     && apk add --no-cache --virtual .build-deps build-base unzip \
     && cd /tmp \
     && git clone https://github.com/keplerproject/luarocks.git \
@@ -27,8 +27,8 @@ RUN apk update && apk add libssl1.0 pcre && rm -f /var/cache/apk/* \
 	&& make -C /usr/src/haproxy \
     TARGET=linux2628 \
     USE_LUA=1 \
-    LUA_LIB=/usr/lua/lib \
-    LUA_INC=/usr/lua/include \
+    LUA_LIB=/usr/lua5.3/lib \
+    LUA_INC=/usr/lua5.3/include \
 		USE_PCRE=1 PCREDIR= \
 		USE_OPENSSL=1 \
 		USE_ZLIB=1 \
