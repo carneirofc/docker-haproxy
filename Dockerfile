@@ -1,24 +1,34 @@
-FROM alpine:latest
-MAINTAINER Corey Butler
+FROM alpine:3.11.5
+MAINTAINER Claudio Carneiro
 
-ENV HAPROXY_MAJOR 1.6
-ENV HAPROXY_VERSION 1.6.4
-#ENV HAPROXY_MD5 d0ebd3d123191a8136e2e5eb8aaff039
+ENV HAPROXY_MAJOR 2.1
+ENV HAPROXY_VERSION 2.1.3
 
-RUN apk update && apk add libssl1.0 pcre lua5.3 && rm -f /var/cache/apk/* \
-  && buildDeps='curl gcc libc-dev linux-headers pcre-dev openssl-dev lua5.3-dev make tar' \
+RUN set -xe \
+    && apk add --no-cache --purge -uU lua lua-dev git \
+    && apk add --no-cache --virtual .build-deps build-base unzip \
+    && cd /tmp \
+    && git clone https://github.com/keplerproject/luarocks.git \
+    && cd luarocks \
+    && sh ./configure \
+    && make build install \
+    && cd \
+    && apk del --purge .build-deps \
+    && rm -rf /var/cache/apk/* /tmp/* /root/.cache/luarocks
+
+RUN apk update && apk add libssl1.0 pcre && rm -f /var/cache/apk/* \
+	&& buildDeps='curl gcc libc-dev linux-headers pcre-dev openssl-dev make tar' \
 	&& set -x \
 	&& apk update && apk add $buildDeps && rm -f /var/cache/apk/* \
 	&& curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/haproxy-${HAPROXY_VERSION}.tar.gz" -o haproxy.tar.gz \
-	#&& echo "${HAPROXY_MD5}  haproxy.tar.gz" | md5sum -c \
 	&& mkdir -p /usr/src/haproxy \
 	&& tar -xzf haproxy.tar.gz -C /usr/src/haproxy --strip-components=1 \
 	&& rm haproxy.tar.gz \
 	&& make -C /usr/src/haproxy \
     TARGET=linux2628 \
     USE_LUA=1 \
-    LUA_LIB=/usr/lua5.3/lib \
-    LUA_INC=/usr/lua5.3/include \
+    LUA_LIB=/usr/lua/lib \
+    LUA_INC=/usr/lua/include \
 		USE_PCRE=1 PCREDIR= \
 		USE_OPENSSL=1 \
 		USE_ZLIB=1 \
@@ -30,7 +40,7 @@ RUN apk update && apk add libssl1.0 pcre lua5.3 && rm -f /var/cache/apk/* \
 	&& rm -rf /usr/src/haproxy \
 	&& apk del $buildDeps
 
-# ADD ./errors /etc/haproxy/errors
+ADD ./errors /etc/haproxy/errors
 ADD ./lib/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 ADD ./lib/acme-http01-webroot.lua /etc/haproxy/acme-http01-webroot.lua
 COPY ./lib/entrypoint.sh /
